@@ -43,75 +43,95 @@ def optional_auth():
 
 
 # Mock responses in French and Kirundi (English removed)
-MOCK_RESPONSES = {
-    'fr': {
-        'weather': [
-            "La météo pour demain sera ensoleillée avec une température de 25°C.",
-            "Il est prévu des averses légères demain. Préparez-vous!",
-            "Temps partiellement nuageux avec des températures autour de 23°C."
-        ],
-        'farming': [
-            "Pour les haricots, plantez pendant la saison des pluies (septembre-décembre).",
-            "Utilisez du compost organique pour améliorer la fertilité du sol.",
-            "L'espacement idéal pour le maïs est de 75cm entre les rangées."
-        ],
-        'prices': [
-            "Le prix actuel des haricots à Bujumbura est d'environ 1800 FBu/kg.",
-            "Les prix du maïs ont augmenté cette semaine à 1200 FBu/kg.",
-            "Les tomates se vendent bien à 800 FBu/kg au marché central."
-        ],
-        'default': [
-            "Je suis là pour vous aider avec des conseils agricoles. Posez-moi vos questions!",
-            "Pouvez-vous préciser votre question? Je peux vous aider avec la météo, les prix ou les techniques agricoles.",
-            "Je suis votre assistant agricole. Comment puis-je vous aider aujourd'hui?"
-        ]
-    },
-    'rn': {  # Kirundi
-        'weather': [
-            "Ikirere cozoza rizoba hanyuma ubushyuhe bwizoba 25°C.",
-            "Hazogwa imvura nkeya ejo. Witegure!",
-            "Ikirere kizoba gifise ibicu bike kandi ubushyuhe buzoba hafi ya 23°C."
-        ],
-        'farming': [
-            "Ibiharage, ubishyire mu gihe c'imvura (Nzero-Ukuboza).",
-            "Koresha ifumbire kavukire kugira ngo ubone umusaruro mwiza.",
-            "Ikigereranyo ciza c'ibigori ni 75cm hagati y'imirongo."
-        ],
-        'prices': [
-            "Igiciro c'ibiharage muri Bujumbura kiri hafi ya 1800 FBu/kg.",
-            "Igiciro c'ibigori cyiyongereye muri iki cyumweru kigeze kuri 1200 FBu/kg.",
-            "Inyanya zigurishwa neza ku giciro ca 800 FBu/kg ku isoko rikuru."
-        ],
-        'default': [
-            "Ndi hano kugira ngo ngufashe mu bihingwa. Mfata ibibazo!",
-            "Urashobora kunsobanurira ibibazo byawe? Ndashobora kugufasha ku kirere, ibiciro canke uburyo bwo guhinga.",
-            "Ndi umufasha wawe mu bihingwa. Ese ndakugirira iki uyu munsi?"
-        ]
-    }
-}
+def check_price(keyword, language='fr'):
+    """Query market_prices table for a crop."""
+    try:
+        supabase = get_supabase()
+        response = supabase.table('market_prices').select('*').ilike('crop_name', f'%{keyword}%').order('date_recorded', desc=True).limit(1).execute()
+        
+        data = response.data
+        if not data:
+            if language == 'rn':
+                return f"Ntibishobotse kubona igiciro ca {keyword}."
+            return f"Je n'ai pas trouvé de prix récent pour '{keyword}'."
+            
+        item = data[0]
+        price = item['price']
+        location = item['market_location']
+        
+        if language == 'rn':
+            return f"Igiciro ca {item['crop_name']} i {location} ni {price} FBu/kg."
+        return f"Le prix actuel pour {item['crop_name']} à {location} est de {price} FBu/kg."
+    except Exception as e:
+        print(f"Error checking price: {e}")
+        return "Désolé, je ne peux pas vérifier les prix pour le moment."
 
+def check_availability(keyword, language='fr'):
+    """Query products table for availability."""
+    try:
+        supabase = get_supabase()
+        # Find products matching name and with inventory > 0
+        response = supabase.table('products').select('*').ilike('name', f'%{keyword}%').gt('quantity_available', 0).limit(3).execute()
+        
+        data = response.data
+        if not data:
+            if language == 'rn':
+                return f"Nta {keyword} dufite ubu."
+            return f"Désolé, nous n'avons pas de '{keyword}' disponible pour le moment."
+            
+        count = len(data)
+        if language == 'rn':
+            return f"Ego! Dufise {count} {keyword} zitandukanye. Urajya kuri 'Marché' kugura."
+        return f"Oui! Nous avons {count} offres pour '{keyword}'. Visitez la page 'Marché' pour commander."
+    except Exception as e:
+        print(f"Error checking availability: {e}")
+        return "Désolé, je ne peux pas vérifier le stock pour le moment."
 
-def get_mock_response(message, language='fr'):
-    """Generate a mock chatbot response based on message content."""
+def get_smart_response(message, language='fr'):
+    """Generate a data-driven response."""
     message_lower = message.lower()
     
-    # Detect topic from keywords
-    if any(word in message_lower for word in ['météo', 'weather', 'ikirere', 'temps', 'pluie', 'imvura']):
-        topic = 'weather'
-    elif any(word in message_lower for word in ['prix', 'price', 'igiciro', 'marché', 'market', 'isoko']):
-        topic = 'prices'
-    elif any(word in message_lower for word in ['planter', 'cultiver', 'guhinga', 'farming', 'agriculture', 'ubuhinzi']):
-        topic = 'farming'
-    else:
-        topic = 'default'
+    # Keyword extraction (simple)
+    # Define common crops to look for
+    crops = ['haricot', 'maïs', 'tomate', 'pomme de terre', 'riz', 'oignon', 'carotte', 
+             'ibiharage', 'ibigori', 'inyanya', 'ibirayi', 'umuceri']
     
-    # Get language-specific responses
-    # Defaulting to French if not Kirundi
-    lang_code = 'rn' if language == 'rn' or language == 'kirundi' else 'fr'
-    responses = MOCK_RESPONSES.get(lang_code, MOCK_RESPONSES['fr'])
+    found_crop = next((crop for crop in crops if crop in message_lower), None)
     
-    # Return random response from topic
-    return random.choice(responses.get(topic, responses['default']))
+    # 1. Price Check Intent
+    if any(word in message_lower for word in ['prix', 'price', 'igiciro', 'coûte', 'gura']):
+        if found_crop:
+            return check_price(found_crop, language)
+        else:
+            if language == 'rn':
+                return "Ushaka kumenya igiciro c'ikihe gihingwa? (Urugero: Igiciro c'ibiharage)"
+            return "De quel produit voulez-vous connaître le prix? (Ex: Prix des haricots)"
+
+    # 2. Availability/Buying Intent
+    elif any(word in message_lower for word in ['avez-vous', 'disponible', 'acheter', 'ntabwo', 'dufise', 'shaka']):
+        if found_crop:
+            return check_availability(found_crop, language)
+        else:
+            if language == 'rn':
+                return "Ushaka kugura iki? (Urugero: Ndashaka ibigori)"
+            return "Que cherchez-vous à acheter? (Ex: Avez-vous du maïs?)"
+            
+    # 3. Weather (Keep generic/mock for now as we don't have a weather API)
+    elif any(word in message_lower for word in ['météo', 'weather', 'ikirere', 'imvura']):
+        if language == 'rn':
+            return "Ikirere kimeze neza uyu munsi. Nta mvura itegenijwe."
+        return "La météo est favorable aujourd'hui. Pas de pluie prévue dans l'immédiat."
+        
+    # 4. Greeting/Default
+    elif any(word in message_lower for word in ['bonjour', 'salut', 'bwakeye', 'bite']):
+        if language == 'rn':
+            return "Bwakeye! Ndi FarmOn Assistant. Ni gute nagufasha?"
+        return "Bonjour! Je suis l'assistant FarmOn. Comment puis-je vous aider (Prix, Stocks, Météo)?"
+        
+    # Default fallback
+    if language == 'rn':
+        return "Mbabarira, sinumvise neza. Ushobora gusubiramwo?"
+    return "Je ne suis pas sûr de comprendre. Pouvez-vous demander le prix d'un produit ou sa disponibilité?"
 
 
 @chatbot_bp.route('/ask', methods=['POST'])
@@ -126,8 +146,8 @@ def ask_chatbot():
     message = data['message']
     language = data.get('language', 'fr')  # Default to French
     
-    # Get mock response
-    bot_response = get_mock_response(message, language)
+    # Get smart response
+    bot_response = get_smart_response(message, language)
     
     # Try to get authenticated user (optional)
     user = optional_auth()
