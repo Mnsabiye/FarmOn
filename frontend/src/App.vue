@@ -22,7 +22,7 @@ import { Sprout, Mail, Phone, MapPin, Facebook, Twitter, Instagram } from 'lucid
           <div>
             <div class="flex items-center space-x-2 mb-4">
               <Sprout class="w-8 h-8 text-primary-400" />
-              <span class="text-xl font-bold">FarmConnect</span>
+              <span class="text-xl font-bold">FarmOn</span>
             </div>
             <p class="text-primary-200 text-sm mb-4">
               Connecter les agriculteurs aux marchés. Une plateforme pour une agriculture plus intelligente et plus rentable.
@@ -65,18 +65,18 @@ import { Sprout, Mail, Phone, MapPin, Facebook, Twitter, Instagram } from 'lucid
               </li>
               <li class="flex items-center space-x-3 text-primary-300">
                 <Phone class="w-5 h-5 flex-shrink-0" />
-                <span>+257 79 000 000</span>
+                <span>+257 67 877 278</span>
               </li>
               <li class="flex items-center space-x-3 text-primary-300">
                 <Mail class="w-5 h-5 flex-shrink-0" />
-                <span>contact@farmconnect.bi</span>
+                <span>farmconnect.bdi@gmail.com</span>
               </li>
             </ul>
           </div>
         </div>
 
         <div class="border-t border-primary-800 pt-8 text-center text-primary-400 text-sm">
-          <p>&copy; {{ new Date().getFullYear() }} FarmConnect. Tous droits réservés.</p>
+          <p>&copy; {{ new Date().getFullYear() }} FarmOn. Tous droits réservés.</p>
         </div>
       </div>
     </footer>
