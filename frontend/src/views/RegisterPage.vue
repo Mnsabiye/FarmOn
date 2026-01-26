@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
-import { UserPlus, Loader2, User, Mail, KeyRound, Phone, MapPin } from 'lucide-vue-next';
+import { UserPlus, Loader2, User, Mail, KeyRound, Phone, MapPin, Check, X } from 'lucide-vue-next';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -19,8 +19,28 @@ const formData = ref({
 const error = ref('');
 const isLoading = computed(() => authStore.isLoading);
 
+const passwordRequirements = computed(() => {
+  const pwd = formData.value.password;
+  return [
+    { label: 'Au moins 8 caractères', valid: pwd.length >= 8 },
+    { label: 'Au moins une majuscule', valid: /[A-Z]/.test(pwd) },
+    { label: 'Au moins un chiffre', valid: /[0-9]/.test(pwd) },
+    { label: 'Au moins un caractère spécial', valid: /[^A-Za-z0-9]/.test(pwd) }
+  ];
+});
+
+const isPasswordValid = computed(() => {
+  return passwordRequirements.value.every(req => req.valid);
+});
+
 const handleRegister = async () => {
   error.value = '';
+  
+  if (!isPasswordValid.value) {
+    error.value = "Le mot de passe ne respecte pas les critères de sécurité.";
+    return;
+  }
+
   try {
     await authStore.register(formData.value);
     router.push(authStore.isFarmer ? '/dashboard' : '/marketplace');
@@ -79,8 +99,23 @@ const handleRegister = async () => {
               type="password" 
               required 
               class="appearance-none rounded-none relative block w-full px-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm" 
-              placeholder="Mot de passe (min. 6 chars)" 
+              placeholder="Mot de passe" 
             />
+          </div>
+
+          <!-- Password Strength Indicator -->
+          <div v-if="formData.password" class="px-4 py-2 bg-gray-50 border border-gray-100 rounded-md">
+            <p class="text-xs font-semibold text-gray-500 mb-2">Sécurité du mot de passe:</p>
+            <ul class="space-y-1">
+              <li v-for="(req, index) in passwordRequirements" :key="index" class="flex items-center text-xs">
+                <component 
+                  :is="req.valid ? 'Check' : 'X'" 
+                  class="w-3 h-3 mr-2"
+                  :class="req.valid ? 'text-green-500' : 'text-gray-300'"
+                />
+                <span :class="req.valid ? 'text-green-700' : 'text-gray-500'">{{ req.label }}</span>
+              </li>
+            </ul>
           </div>
           
           <!-- Role Selection -->
@@ -133,7 +168,7 @@ const handleRegister = async () => {
         <div>
           <button 
             type="submit" 
-            :disabled="isLoading"
+            :disabled="isLoading || !isPasswordValid"
             class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-earth-600 hover:bg-earth-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-earth-500 disabled:opacity-50 transition"
           >
             <span v-if="isLoading" class="absolute left-0 inset-y-0 flex items-center pl-3">
