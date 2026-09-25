@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
-import { Menu, X, LogOut, Sprout, ShoppingBag, LayoutDashboard, LogIn } from 'lucide-vue-next';
+import { Menu, X, LogOut, Sprout, ShoppingBag, LayoutDashboard, LogIn, ShieldCheck } from 'lucide-vue-next';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -20,6 +20,7 @@ const logout = async () => {
 
 const isAuthenticated = computed(() => authStore.isAuthenticated);
 const isFarmer = computed(() => authStore.isFarmer);
+const isAdmin = computed(() => authStore.isAdmin);
 const user = computed(() => authStore.user);
 </script>
 
@@ -46,7 +47,11 @@ const user = computed(() => authStore.user);
               <LayoutDashboard class="w-4 h-4" />
               Tableau de Bord
             </RouterLink>
-            
+            <RouterLink v-if="isAdmin" to="/admin" class="hover:text-primary-100 transition font-medium flex items-center gap-1">
+              <ShieldCheck class="w-4 h-4" />
+              Administration
+            </RouterLink>
+
             <div class="flex items-center gap-4 ml-4 pl-4 border-l border-primary-500">
               <span class="text-sm font-medium">{{ user?.username }}</span>
               <button @click="logout" class="bg-primary-700 hover:bg-primary-800 px-3 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-1">
@@ -83,6 +88,7 @@ const user = computed(() => authStore.user);
         
         <template v-if="isAuthenticated">
           <RouterLink v-if="isFarmer" to="/dashboard" class="block px-3 py-2 rounded-md hover:bg-primary-600 font-medium" @click="isMenuOpen = false">Tableau de Bord</RouterLink>
+          <RouterLink v-if="isAdmin" to="/admin" class="block px-3 py-2 rounded-md hover:bg-primary-600 font-medium" @click="isMenuOpen = false">Administration</RouterLink>
           <div class="pt-4 mt-2 border-t border-primary-600">
             <div class="px-3 py-2 text-primary-100 text-sm">Connecté en tant que <span class="font-bold text-white">{{ user?.username }}</span></div>
             <button @click="logout" class="w-full text-left px-3 py-2 rounded-md hover:bg-primary-600 font-medium flex items-center gap-2">
