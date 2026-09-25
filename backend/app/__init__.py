@@ -33,7 +33,8 @@ def create_app(config_name='default'):
             'endpoints': {
                 'auth': '/api/auth',
                 'products': '/api/products',
-                'chatbot': '/api/chatbot'
+                'chatbot': '/api/chatbot',
+                'admin': '/api/admin'
             }
         }
     

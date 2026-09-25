@@ -3,7 +3,9 @@ def register_blueprints(app):
     from app.routes.auth import auth_bp
     from app.routes.marketplace import marketplace_bp
     from app.routes.chatbot import chatbot_bp
-    
+    from app.routes.admin import admin_bp
+
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(marketplace_bp, url_prefix='/api')
     app.register_blueprint(chatbot_bp, url_prefix='/api/chatbot')
+    app.register_blueprint(admin_bp, url_prefix='/api/admin')
