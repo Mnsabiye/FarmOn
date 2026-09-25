@@ -93,6 +93,32 @@ The API will be available at `http://localhost:5000`
 - `POST /api/chatbot/ask` - Send message to chatbot
 - `GET /api/chatbot/history` - Get chat history (requires JWT)
 
+### Admin
+
+All admin endpoints require a Supabase access token for a user whose role is `admin`.
+Run `admin_setup.sql` in the Supabase SQL Editor first (audit log table + a trigger
+that stops users from giving themselves the admin role), then promote your account:
+`UPDATE public.users SET role = 'admin' WHERE email = 'you@example.com';`
+
+- `GET /api/admin/overview` - Dashboard metrics and 30-day activity
+- `GET /api/admin/users` - Users (`q`, `role`, `page`, `per_page`)
+- `PATCH /api/admin/users/<id>/role` - Change a user's role
+- `POST /api/admin/users/<id>/suspend` / `restore` - Block or re-allow sign-in
+- `GET /api/admin/products` - All listings (`q`, `category`, `stock=in|out`, `page`)
+- `DELETE /api/admin/products/<id>` - Remove a listing (optional `reason`)
+- `POST /api/admin/market-prices` - Record a market price
+- `DELETE /api/admin/market-prices/<id>` - Delete a market price
+- `GET /api/admin/audit-log` - History of admin actions
+
+The frontend dashboard lives at `/admin`.
+
+### Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
 ## Sample Data
 
 After running `init_db.py`, you'll have:

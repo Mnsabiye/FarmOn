@@ -67,7 +67,7 @@ def test_change_role(client, admin_headers, db):
     assert buyer['role'] == 'farmer'
     log = db.tables['admin_audit_log'][-1]
     assert log['action'] == 'user.role_changed'
-    assert log['details'] == {'from': 'buyer', 'to': 'farmer'}
+    assert log['details'] == {'username': 'paul', 'from': 'buyer', 'to': 'farmer'}
     assert log['admin_id'] == ADMIN_ID
 
 
@@ -95,6 +95,7 @@ def test_suspend_and_restore(client, admin_headers, db):
     assert attrs1['app_metadata'] == {'suspended': True} and attrs1['ban_duration'] != 'none'
     assert attrs2 == {'ban_duration': 'none', 'app_metadata': {'suspended': False}}
     assert [e['action'] for e in db.tables['admin_audit_log']] == ['user.suspended', 'user.restored']
+    assert db.tables['admin_audit_log'][0]['details'] == {'username': 'jean'}
 
 
 def test_cannot_suspend_self(client, admin_headers):

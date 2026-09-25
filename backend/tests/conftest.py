@@ -84,7 +84,8 @@ class FakeQuery:
     def order(self, *_args, **_kwargs):
         return self
 
-    def limit(self, _n):
+    def limit(self, n):
+        self.limit_ = n
         return self
 
     def range(self, start, end):
@@ -110,6 +111,8 @@ class FakeQuery:
         count = len(data) if self.count_requested else None
         if hasattr(self, 'range_'):
             data = data[self.range_[0]:self.range_[1] + 1]
+        if hasattr(self, 'limit_'):
+            data = data[:self.limit_]
         return SimpleNamespace(data=data, count=count)
 
 

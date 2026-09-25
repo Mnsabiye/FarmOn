@@ -200,13 +200,15 @@ def update_user_role(user_id):
 
     try:
         supabase = get_supabase()
-        existing = supabase.table('users').select('id, role').eq('id', user_id).execute()
+        existing = supabase.table('users').select('id, username, role').eq('id', user_id).execute()
         if not existing.data:
             return jsonify({'error': 'User not found'}), 404
 
         previous = existing.data[0]['role']
         result = supabase.table('users').update({'role': role}).eq('id', user_id).execute()
-        _log_action('user.role_changed', 'user', user_id, {'from': previous, 'to': role})
+        _log_action('user.role_changed', 'user', user_id, {
+            'username': existing.data[0].get('username'), 'from': previous, 'to': role,
+        })
 
         return jsonify({
             'message': 'Role updated successfully',
@@ -224,7 +226,7 @@ def _set_suspended(user_id, suspended):
 
     try:
         supabase = get_supabase()
-        existing = supabase.table('users').select('id').eq('id', user_id).execute()
+        existing = supabase.table('users').select('id, username').eq('id', user_id).execute()
         if not existing.data:
             return jsonify({'error': 'User not found'}), 404
 
@@ -232,7 +234,9 @@ def _set_suspended(user_id, suspended):
             'ban_duration': SUSPEND_DURATION if suspended else 'none',
             'app_metadata': {'suspended': suspended},
         })
-        _log_action('user.suspended' if suspended else 'user.restored', 'user', user_id)
+        _log_action('user.suspended' if suspended else 'user.restored', 'user', user_id, {
+            'username': existing.data[0].get('username'),
+        })
 
         return jsonify({
             'message': 'User suspended' if suspended else 'User restored',
